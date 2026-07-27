@@ -651,5 +651,31 @@
   fitBoard();
 
   update(null);
+
+  // When embedded, report our height so the parent iframe can size itself.
+  // The page height is not monotonic with width (the board scales, and the
+  // summary strip appears below 900px), so a fixed iframe height always clips
+  // or leaves a gap.
+  if (window.parent !== window) {
+    var lastH = 0;
+    function reportHeight() {
+      var h = Math.ceil(document.documentElement.scrollHeight);
+      if (h !== lastH) {
+        lastH = h;
+        window.parent.postMessage({ type: 'bfroi:height', height: h }, '*');
+      }
+    }
+    window.addEventListener('resize', reportHeight);
+    window.addEventListener('load', reportHeight);
+    document.addEventListener('input', reportHeight);
+    document.addEventListener('click', reportHeight);
+    if (window.ResizeObserver) {
+      new ResizeObserver(reportHeight).observe(document.documentElement);
+    }
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(reportHeight);
+    }
+    reportHeight();
+  }
 })();
 </script>
