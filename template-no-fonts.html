@@ -1,0 +1,683 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BookFunnel ROI Calculator</title>
+<style>
+  @font-face {
+    font-family: 'Geist';
+    font-style: normal; font-weight: 400; font-display: swap;
+    src: url(data:font/woff2;base64,__G4_B64__) format('woff2');
+  }
+  @font-face {
+    font-family: 'Geist';
+    font-style: normal; font-weight: 600; font-display: swap;
+    src: url(data:font/woff2;base64,__G6_B64__) format('woff2');
+  }
+  @font-face {
+    font-family: 'Architects Daughter';
+    font-style: normal; font-weight: 400; font-display: block;
+    src: url(data:font/woff2;base64,__AD_B64__) format('woff2');
+  }
+
+  :root {
+    --paper: #f4f6f9;
+    --ink: #1a212c;
+    --red: #c4392b;
+    --panel: #ffffff;
+    --boxbg: #ffffff;
+    --hatch: rgba(26, 33, 44, 0.055);
+    --faint: #7d8899;
+    --wash: rgba(211, 245, 250, 0.85);
+    --good: #0f8a62;
+    --pen: #2899ad;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1a212c;
+      --ink: #f4f6f9;
+      --red: #ff8a7a;
+      --panel: #202835;
+      --boxbg: #1a212c;
+      --hatch: rgba(244, 246, 249, 0.05);
+      --faint: #8d9aac;
+      --wash: rgba(40, 153, 173, 0.22);
+      --good: #55d3a0;
+      --pen: #5bc5d8;
+    }
+  }
+  :root[data-theme="light"] {
+    --paper: #f4f6f9; --ink: #1a212c; --red: #c4392b; --panel: #ffffff;
+    --boxbg: #ffffff; --hatch: rgba(26, 33, 44, 0.055); --faint: #7d8899;
+    --wash: rgba(211, 245, 250, 0.85); --good: #0f8a62; --pen: #2899ad;
+  }
+  :root[data-theme="dark"] {
+    --paper: #1a212c; --ink: #f4f6f9; --red: #ff8a7a; --panel: #202835;
+    --boxbg: #1a212c; --hatch: rgba(244, 246, 249, 0.05); --faint: #8d9aac;
+    --wash: rgba(40, 153, 173, 0.22); --good: #55d3a0; --pen: #5bc5d8;
+  }
+
+  html { background: var(--paper); }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: 'Architects Daughter', 'Segoe Print', 'Comic Sans MS', cursive;
+  }
+  .wrap { max-width: 1480px; margin: 0 auto; padding: 32px 16px 56px; }
+
+  .brandbar { width: min(1400px, 100%); margin: 0 auto 18px; }
+  .hint {
+    width: min(1400px, 100%); margin: 0 auto 14px;
+    font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-size: 15.5px; color: var(--faint);
+  }
+  .hint b { color: var(--pen); font-weight: 500; }
+  .logo {
+    display: block; width: 212px; height: 34px;
+    background: url(data:image/png;base64,__LOGOL_B64__) no-repeat left center / contain;
+  }
+  @media (prefers-color-scheme: dark) {
+    .logo { background-image: url(data:image/png;base64,__LOGOD_B64__); }
+  }
+  :root[data-theme="light"] .logo { background-image: url(data:image/png;base64,__LOGOL_B64__); }
+  :root[data-theme="dark"] .logo { background-image: url(data:image/png;base64,__LOGOD_B64__); }
+
+  .shell { overflow-x: auto; padding-bottom: 6px; }
+  .stage { position: relative; margin: 0 auto; }
+  .board { transform-origin: top left; }
+
+  .results {
+    display: none; width: min(1400px, 100%); margin: 0 auto 16px;
+    flex-wrap: wrap; gap: 12px 30px;
+    font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+  .rcard { display: flex; flex-direction: column; gap: 1px; }
+  .rlabel { font-size: 12px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--faint); }
+  .rval { font-size: 25px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .rsub { font-size: 12.5px; font-weight: 500; }
+  .rval.pos, .rsub.pos { color: var(--good); }
+  .rval.neg, .rsub.neg { color: var(--red); }
+  @media (max-width: 900px) { .results { display: flex; } }
+  .board {
+    position: relative; width: 1400px; height: 690px; margin: 0 auto;
+    border: 2.5px solid var(--ink);
+    border-radius: 22px 26px 20px 28px;
+    background-color: var(--panel);
+    background-image:
+      repeating-linear-gradient(45deg, var(--hatch) 0 1px, transparent 1px 7px),
+      repeating-linear-gradient(-45deg, var(--hatch) 0 1px, transparent 1px 7px);
+  }
+  #wires { position: absolute; inset: 0; width: 100%; height: 100%; color: var(--ink); pointer-events: none; }
+
+  .node { position: absolute; }
+  h1.node {
+    left: 0; right: 0; top: 24px; margin: 0; text-align: center;
+    font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-weight: 600; font-size: 34px; letter-spacing: -0.015em;
+  }
+
+  .lbl { font-size: 18px; letter-spacing: 1.5px; white-space: nowrap; text-transform: uppercase; }
+  .row { display: inline-flex; align-items: baseline; gap: 8px; white-space: nowrap; }
+  .k { display: inline-block; width: 120px; }
+  .k.wide { width: 248px; }
+  .ctr { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+
+  input.num {
+    font-family: 'Architects Daughter', 'Segoe Print', 'Comic Sans MS', cursive;
+    font-size: 25px; color: var(--pen); text-align: center;
+    font-variant-numeric: tabular-nums; line-height: 1.1;
+    background: transparent; border: none; border-radius: 0;
+    border-bottom: 2.5px dashed var(--ink);
+    padding: 0 3px 2px; width: 3.2ch; caret-color: var(--pen);
+  }
+  input.num.big { font-size: 33px; }
+  input.num.huge, .stat.huge { font-size: 38px; }
+  input.num.huge { color: var(--ink); }
+  input.num.huge.pos { color: var(--good); }
+  input.num.huge.neg { color: var(--red); }
+  input.num.cost { color: var(--red); }
+  .stat.cost { color: var(--red); }
+  .stat.bare { border-bottom: none; }
+  .stat.mid { font-size: 27px; }
+  .fix.mid { font-size: 18px; }
+  input.num.pos { color: var(--good); }
+  input.num.neg { color: var(--red); }
+  input.num:hover { background: var(--wash); }
+  input.num:focus { outline: none; background: var(--wash); border-bottom-style: solid; border-bottom-color: var(--pen); }
+  input.num:focus-visible { outline: 2px solid var(--pen); outline-offset: 3px; }
+
+  .fix { font-size: 17px; color: var(--ink); }
+  .fix.big { font-size: 23px; }
+  .stat {
+    font-size: 25px; color: var(--ink); font-variant-numeric: tabular-nums;
+    border-bottom: 2.5px solid var(--ink); padding: 0 4px 2px;
+  }
+  .cap { font-size: 13px; line-height: 1.35; letter-spacing: 1px; color: var(--faint); text-transform: uppercase; }
+  .cap.gap { margin-left: 30px; }
+  .cap.pos { color: var(--good); }
+  .cap.neg { color: var(--red); }
+  .cap.head { font-size: 15px; letter-spacing: 2px; color: var(--ink); }
+
+  .group {
+    position: absolute; background: var(--boxbg);
+    border: 2.5px solid var(--ink); border-radius: 16px 22px 14px 20px;
+  }
+  .titlebox {
+    display: inline-block; padding: 6px 22px 8px;
+    background: var(--boxbg); border: 2.5px solid var(--ink);
+    border-radius: 3px 7px 4px 8px;
+    font-size: 19px; letter-spacing: 2px; text-transform: uppercase;
+    transform: rotate(-1deg);
+  }
+  .titlebox.long { font-size: 13.5px; letter-spacing: 0.8px; padding: 7px 13px 9px; }
+
+  .fbox {
+    position: absolute; width: 120px; height: 118px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    border: 2.5px solid var(--ink); border-radius: 4px 8px 5px 9px;
+    background: var(--boxbg);
+  }
+  .fbox.tilt { transform: rotate(0.7deg); }
+  .fbox .cap { font-size: 12px; text-align: center; }
+
+  .claim {
+    position: absolute; background: var(--boxbg);
+    border: 2.5px solid var(--ink); border-radius: 16px 22px 14px 20px;
+    transition: border-color .25s ease;
+  }
+  .claim.on { border-color: var(--good); }
+  .claim.off { border-color: var(--red); }
+
+  .check {
+    display: grid; place-items: center;
+    width: 28px; height: 28px; flex: none; align-self: center;
+    border: 2.5px solid var(--ink); border-radius: 3px 6px 4px 7px;
+    background: var(--boxbg); color: var(--ink);
+    transform: rotate(-1.5deg);
+    transition: border-color .25s ease, color .25s ease;
+  }
+  .check svg { grid-area: 1 / 1; width: 22px; height: 22px; opacity: 0; transition: opacity .25s ease; }
+  .check.on { border-color: var(--good); color: var(--good); }
+  .check.on .tick { opacity: 1; }
+  .check.off { border-color: var(--red); color: var(--red); }
+  .check.off .cross { opacity: 1; }
+  .lbl.pays { font-size: 17px; transition: color .25s ease; }
+  .lbl.pays.on { color: var(--good); }
+  .lbl.pays.off { color: var(--red); }
+
+  @keyframes pop { 0% { transform: scale(1); } 35% { transform: scale(1.2); } 100% { transform: scale(1); } }
+  .flash { animation: pop 0.4s ease-out; }
+  @media (prefers-reduced-motion: reduce) {
+    .flash { animation: none; }
+    .check, .check svg, .lbl.pays { transition: none; }
+  }
+
+  .below { width: min(1400px, 100%); margin: 20px auto 0; }
+  .below { font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif; }
+  .legend { font-size: 14.5px; letter-spacing: 0; color: var(--faint); }
+  .legend b { color: var(--pen); font-weight: 500; }
+
+  .storytitle {
+    font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-weight: 600; font-size: 19px; letter-spacing: -0.01em;
+    color: var(--ink); margin: 26px 0 0;
+  }
+  .mathline { margin: 8px 0 0; max-width: 100%; font-size: 17px; line-height: 1.7; color: var(--ink); text-wrap: pretty; }
+  .mathline b { color: var(--pen); font-weight: 500; }
+  .mathline b.pos { color: var(--good); }
+  .mathline b.neg { color: var(--red); }
+
+  button.reset {
+    margin-top: 24px; padding: 9px 18px 10px; cursor: pointer;
+    font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-size: 14.5px; font-weight: 500; letter-spacing: 0;
+    color: var(--ink); background: var(--boxbg);
+    border: 1.5px solid var(--ink); border-radius: 8px;
+  }
+  button.reset:hover { background: var(--wash); }
+  button.reset:focus-visible { outline: 2px solid var(--pen); outline-offset: 3px; }
+</style>
+
+<div class="wrap">
+  <div class="brandbar"><span class="logo" role="img" aria-label="bookfunnels.io"></span></div>
+
+  <p class="hint">Change any <b>dashed number</b> to your own. Everything else updates instantly.</p>
+
+  <div class="results">
+    <div class="rcard"><span class="rlabel">Total Revenue</span><span class="rval" id="rTotal"></span></div>
+    <div class="rcard"><span class="rlabel">Ad Spend</span><span class="rval neg" id="rAd"></span></div>
+    <div class="rcard"><span class="rlabel">Profit</span><span class="rval" id="rProfit"></span></div>
+    <div class="rcard"><span class="rlabel">Return On Ads</span><span class="rval" id="rRoas"></span><span class="rsub" id="rPer"></span></div>
+  </div>
+
+  <div class="shell">
+    <div class="stage" id="stage">
+    <div class="board">
+      <div class="claim" id="oClaimBox" style="left:55px; top:594px; width:545px; height:80px;"></div>
+      <div class="group" style="left:690px; top:120px; width:360px; height:234px;"></div>
+      <div class="group" style="left:690px; top:396px; width:360px; height:270px;"></div>
+
+      <svg id="wires" viewBox="0 0 1400 690" aria-hidden="true">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="7.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M1.5,1.2 L8.5,5 L1.5,8.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+        <g id="wiregroup" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></g>
+      </svg>
+
+      <h1 class="node">Book Funnel ROI Calculator</h1>
+
+      <!-- traffic in -->
+      <div class="node row" style="left:55px; top:110px;">
+        <span class="lbl k wide">Ad Spend</span><span class="fix">$</span>
+        <input class="num cost" id="fAdSpend" inputmode="decimal" aria-label="Ad spend per month"><span class="cap">/ mo</span>
+      </div>
+      <div class="node row" style="left:55px; top:162px;">
+        <span class="lbl k wide">Cost / Click</span><span class="fix">$</span>
+        <input class="num" id="fCpc" inputmode="decimal" aria-label="Cost per click">
+      </div>
+      <div class="node row" style="left:55px; top:214px;">
+        <span class="lbl k wide">Clicks</span>
+        <input class="num" id="fClicks" inputmode="decimal" aria-label="Clicks per month">
+      </div>
+
+      <!-- the funnel itself -->
+      <div class="node lbl" style="left:288px; top:266px;">BookFunnel</div>
+
+      <div class="fbox" style="left:140px; top:302px;">
+        <span class="cap">Book</span>
+        <span class="row"><span class="fix">$</span>
+          <input class="num" id="fBookPrice" inputmode="decimal" aria-label="Book price"></span>
+      </div>
+      <div class="fbox tilt" style="left:290px; top:302px;">
+        <span class="cap">Bump Upgrade</span>
+        <span class="row"><span class="fix">$</span>
+          <input class="num" id="fBumpPrice" inputmode="decimal" aria-label="Bump upgrade price"></span>
+      </div>
+      <div class="fbox" style="left:440px; top:302px;">
+        <span class="cap">One-Click Offer</span>
+        <span class="row"><span class="fix">$</span>
+          <input class="num" id="fUpPrice" inputmode="decimal" aria-label="One-click offer price"></span>
+      </div>
+
+      <div class="node ctr" style="left:140px; top:434px; width:120px;">
+        <span class="row"><input class="num" id="fConv" inputmode="decimal" aria-label="Click to book sale conversion percent"><span class="fix">%</span></span>
+        <span class="cap">of clicks</span>
+      </div>
+      <div class="node ctr" style="left:290px; top:434px; width:120px;">
+        <span class="row"><input class="num" id="fBumpRate" inputmode="decimal" aria-label="Bump upgrade take rate percent"><span class="fix">%</span></span>
+        <span class="cap">of buyers</span>
+      </div>
+      <div class="node ctr" style="left:440px; top:434px; width:120px;">
+        <span class="row"><input class="num" id="fUpRate" inputmode="decimal" aria-label="One-click offer take rate percent"><span class="fix">%</span></span>
+        <span class="cap">of buyers</span>
+      </div>
+
+      <div class="node cap" style="left:600px; top:352px;">Pick one<br>or both</div>
+
+      <div class="node row" style="left:55px; top:492px;">
+        <span class="lbl k wide">Books Sold</span>
+        <input class="num big" id="fBooks" inputmode="decimal" aria-label="Books sold per month">
+      </div>
+
+      <div class="node row" style="left:55px; top:540px;">
+        <span class="lbl k wide">BookFunnels Revenue</span><span class="fix">$</span>
+        <input class="num" id="fFeRev" inputmode="decimal" aria-label="BookFunnel revenue per month">
+      </div>
+
+
+      <div class="node row" style="left:80px; top:608px;">
+        <span class="check" id="oPays" role="img" aria-label="No">
+          <svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M4,13.5 L9.5,19 L20,5.5" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="cross" viewBox="0 0 24 24" aria-hidden="true"><path d="M6,6 L18,18 M18,6.5 L6,17.5" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/></svg>
+        </span>
+        <span class="lbl pays" id="oPaysLabel">Your Ads Pay For Themselves</span>
+      </div>
+      <div class="node cap" id="oClaimDetail" style="left:82px; top:646px;"></div>
+
+      <!-- continuity -->
+      <div class="node titlebox long" style="left:720px; top:103px;">Monthly Recurring Revenue (MRR)</div>
+      <div class="node cap" style="left:717px; top:149px;">Membership &middot; Community<br>Software &middot; Ongoing Support</div>
+      <div class="node row" style="left:715px; top:191px;">
+        <span class="lbl k">Join</span>
+        <input class="num" id="fAscend" inputmode="decimal" aria-label="Percent of book buyers who join the membership"><span class="fix">%</span>
+      </div>
+      <div class="node row" style="left:912px; top:194px;">
+        <span class="cap">New / mo</span>
+        <input class="num" id="fNM" inputmode="decimal" aria-label="New members per month">
+      </div>
+      <div class="node row" style="left:715px; top:235px;">
+        <span class="lbl k">Price / mo</span><span class="fix">$</span>
+        <input class="num" id="fMemPrice" inputmode="decimal" aria-label="MRR price per month">
+      </div>
+      <div class="node row" style="left:715px; top:279px;">
+        <span class="lbl k">= New MRR</span><span class="fix">$</span>
+        <input class="num" id="fContRev" inputmode="decimal" aria-label="New recurring revenue added per month">
+      </div>
+
+      <div class="node cap" style="left:718px; top:323px;">added every month, and it stacks</div>
+
+      <!-- high ticket -->
+      <div class="node titlebox" style="left:720px; top:379px;">High Ticket</div>
+      <div class="node cap" style="left:717px; top:435px;">6 Week Intensive &middot; Coaching<br>Consulting &middot; Done For You</div>
+      <div class="node row" style="left:715px; top:480px;">
+        <span class="lbl k">Apply</span>
+        <input class="num" id="fApply" inputmode="decimal" aria-label="Percent of book buyers who apply"><span class="fix">%</span>
+      </div>
+      <div class="node row" style="left:912px; top:483px;">
+        <span class="cap">Apps / mo</span>
+        <input class="num" id="fApps" inputmode="decimal" aria-label="Applications per month">
+      </div>
+      <div class="node row" style="left:715px; top:524px;">
+        <span class="lbl k">Close</span>
+        <input class="num" id="fClose" inputmode="decimal" aria-label="Application close rate percent"><span class="fix">%</span>
+      </div>
+      <div class="node row" style="left:912px; top:527px;">
+        <span class="cap">Clients</span>
+        <input class="num" id="fClients" inputmode="decimal" aria-label="New clients per month">
+      </div>
+      <div class="node row" style="left:715px; top:568px;">
+        <span class="lbl k">Price</span><span class="fix">$</span>
+        <input class="num" id="fBackPrice" inputmode="decimal" aria-label="High ticket offer price">
+      </div>
+      <div class="node row" style="left:715px; top:612px;">
+        <span class="lbl k">= Revenue</span><span class="fix">$</span>
+        <input class="num" id="fBackRev" inputmode="decimal" aria-label="High ticket revenue per month">
+      </div>
+
+      <!-- per month -->
+      <div class="node lbl" style="left:1112px; top:286px; font-size:21px;">Per Month</div>
+      <div class="node cap head" style="left:1116px; top:322px;">Total Revenue</div>
+      <div class="node row" style="left:1112px; top:340px;">
+        <span class="fix big">$</span>
+        <input class="num huge" id="fTotal" inputmode="decimal" aria-label="Total revenue per month">
+      </div>
+      <div class="node row" style="left:1112px; top:408px;">
+        <span class="fix mid">&minus;</span><span class="fix mid">$</span>
+        <span class="stat mid bare cost" id="oAdSpendOut">4,000</span>
+        <span class="cap">ad spend</span>
+      </div>
+      <div class="node cap head" style="left:1116px; top:470px;">Profit</div>
+      <div class="node row" style="left:1112px; top:488px;">
+        <span class="fix big">$</span>
+        <input class="num huge" id="fNet" inputmode="decimal" aria-label="Net profit per month after ad spend">
+      </div>
+      <div class="node cap head" style="left:1116px; top:548px;">Return On Ads</div>
+      <div class="node row" style="left:1112px; top:566px;">
+        <span class="stat huge" id="oRoas">5.3×</span>
+      </div>
+      <div class="node cap" id="oPerDollar" style="left:1116px; top:634px;"></div>
+    </div>
+    </div>
+  </div>
+
+  <div class="below">
+    <h2 class="storytitle">Your Book Funnel Story</h2>
+    <p class="mathline" id="story"></p>
+
+    <button class="reset" id="reset" type="button">↺ Reset to defaults</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var DEFAULTS = {
+    adSpend: 5000,
+    cpc: 4, conv: 10,
+    bookPrice: 21, bumpRate: 30, bumpPrice: 37, upRate: 10, upPrice: 97,
+    ascend: 10, memPrice: 97,
+    apply: 10, close: 33, backPrice: 5000
+  };
+  var S = Object.assign({}, DEFAULTS);
+
+  function $(id) { return document.getElementById(id); }
+
+  function perBook() { return S.bookPrice + S.bumpRate / 100 * S.bumpPrice + S.upRate / 100 * S.upPrice; }
+  function contPerBook() { return (S.ascend / 100) * S.memPrice; }
+  function backPerBook() { return (S.apply / 100) * (S.close / 100) * S.backPrice; }
+  function adPerBook() { return S.conv > 0 ? S.cpc / (S.conv / 100) : 0; }
+
+  function derived() {
+    var adSpend = S.adSpend;
+    var clicks = S.cpc > 0 ? adSpend / S.cpc : 0;
+    var b = clicks * S.conv / 100;
+    var feRev = b * perBook();
+    var nm = Math.round(b * S.ascend / 100);
+    var contRev = nm * S.memPrice;
+    var apps = Math.round(b * S.apply / 100);
+    var clients = Math.round(apps * S.close / 100);
+    var backRev = clients * S.backPrice;
+    var total = feRev + contRev + backRev;
+    return {
+      books: b, clicks: clicks, adSpend: adSpend, feRev: feRev, nm: nm,
+      contRev: contRev, apps: apps, clients: clients, backRev: backRev, total: total,
+      net: total - adSpend,
+      roas: adSpend > 0 ? total / adSpend : 0,
+      feRoas: adSpend > 0 ? feRev / adSpend : 0
+    };
+  }
+
+  function fmtCount(v) {
+    v = Math.max(0, v);
+    if (v > 0 && v < 10) return String(Math.round(v * 10) / 10);
+    return Math.round(v).toLocaleString('en-US');
+  }
+  function fmtMoney(v) { return Math.round(Math.max(0, v)).toLocaleString('en-US'); }
+  function fmtSigned(v) { return Math.round(v).toLocaleString('en-US'); }
+  function fmtRate(v) { return v < 10 ? v.toFixed(2) : String(Math.round(v * 100) / 100); }
+  function fmtPct(v) { return String(Math.round(v * 10) / 10); }
+
+  function setBooks(v) {
+    var k = adPerBook();
+    S.adSpend = k > 0 ? Math.max(0, v) * k : 0;
+  }
+
+  var FIELDS = {
+    fAdSpend:   { fmt: function (r) { return fmtMoney(r.adSpend); },
+                  apply: function (v) { S.adSpend = Math.max(0, v); } },
+    fCpc:       { fmt: function () { return fmtRate(S.cpc); },
+                  apply: function (v) { S.cpc = Math.max(0.01, v); } },
+    fClicks:    { fmt: function (r) { return fmtCount(r.clicks); },
+                  apply: function (v) { setBooks(v * S.conv / 100); } },
+    fConv:      { fmt: function () { return fmtPct(S.conv); },
+                  apply: function (v) { S.conv = Math.min(100, Math.max(0.1, v)); } },
+    fBooks:     { fmt: function (r) { return fmtCount(r.books); },
+                  apply: function (v) { setBooks(v); } },
+
+    fBookPrice: { fmt: function () { return fmtMoney(S.bookPrice); },
+                  apply: function (v) { S.bookPrice = Math.max(0, v); } },
+    fBumpRate:  { fmt: function () { return fmtPct(S.bumpRate); },
+                  apply: function (v) { S.bumpRate = Math.min(100, Math.max(0, v)); } },
+    fBumpPrice: { fmt: function () { return fmtMoney(S.bumpPrice); },
+                  apply: function (v) { S.bumpPrice = Math.max(0, v); } },
+    fUpRate:    { fmt: function () { return fmtPct(S.upRate); },
+                  apply: function (v) { S.upRate = Math.min(100, Math.max(0, v)); } },
+    fUpPrice:   { fmt: function () { return fmtMoney(S.upPrice); },
+                  apply: function (v) { S.upPrice = Math.max(0, v); } },
+    fFeRev:     { fmt: function (r) { return fmtMoney(r.feRev); },
+                  apply: function (v) { var k = perBook(); if (k > 0) setBooks(v / k); } },
+
+    fAscend:    { fmt: function () { return fmtPct(S.ascend); },
+                  apply: function (v) { S.ascend = Math.min(100, Math.max(0, v)); } },
+    fNM:        { fmt: function (r) { return fmtCount(r.nm); },
+                  apply: function (v) { if (S.ascend > 0) setBooks(v / (S.ascend / 100)); } },
+    fMemPrice:  { fmt: function () { return fmtMoney(S.memPrice); },
+                  apply: function (v) { S.memPrice = Math.max(0, v); } },
+    fContRev:   { fmt: function (r) { return fmtMoney(r.contRev); },
+                  apply: function (v) { var k = contPerBook(); if (k > 0) setBooks(v / k); } },
+
+    fApply:     { fmt: function () { return fmtPct(S.apply); },
+                  apply: function (v) { S.apply = Math.min(100, Math.max(0, v)); } },
+    fApps:      { fmt: function (r) { return fmtCount(r.apps); },
+                  apply: function (v) { if (S.apply > 0) setBooks(v / (S.apply / 100)); } },
+    fClose:     { fmt: function () { return fmtPct(S.close); },
+                  apply: function (v) { S.close = Math.min(100, Math.max(0.1, v)); } },
+    fClients:   { fmt: function (r) { return fmtCount(r.clients); },
+                  apply: function (v) { var k = (S.apply / 100) * (S.close / 100); if (k > 0) setBooks(v / k); } },
+    fBackPrice: { fmt: function () { return fmtMoney(S.backPrice); },
+                  apply: function (v) { S.backPrice = Math.max(0, v); } },
+    fBackRev:   { fmt: function (r) { return fmtMoney(r.backRev); },
+                  apply: function (v) { var k = backPerBook(); if (k > 0) setBooks(v / k); } },
+
+    fTotal:     { fmt: function (r) { return fmtMoney(r.total); },
+                  apply: function (v) { var k = perBook() + contPerBook() + backPerBook(); if (k > 0) setBooks(v / k); } },
+    fNet:       { fmt: function (r) { return fmtSigned(r.net); },
+                  apply: function (v) {
+                    var K = perBook() + contPerBook() + backPerBook();
+                    var k = K - adPerBook();
+                    if (k > 0) setBooks(v / k);
+                  } }
+  };
+
+  var STATS = {
+    oAdSpendOut: function (r) { return fmtMoney(r.adSpend); },
+    oRoas: function (r) { return r.roas.toFixed(1) + '×'; },
+    oPerDollar: function (r) { return '$' + r.roas.toFixed(2) + ' back per $1 spent'; }
+  };
+
+  function story(r) {
+    return 'Spend <b>$' + fmtMoney(r.adSpend) + '</b> a month at <b>$' + fmtRate(S.cpc) +
+      '</b> a click and you buy <b>' + fmtCount(r.clicks) + ' clicks</b>. At <b>' + fmtPct(S.conv) +
+      '%</b> that is <b>' + fmtCount(r.books) +
+      ' books sold</b>, and the book, bump upgrade, and one-click offer bring back <b>$' +
+      fmtMoney(r.feRev) + '</b>, so the funnel ' +
+      (r.feRoas >= 1 ? 'more than pays for the ads' : 'covers <b>' + Math.round(r.feRoas * 100) + '%</b> of the ad cost') +
+      '. Those readers add <b>$' + fmtMoney(r.contRev) + ' of new recurring revenue</b> every month, and send <b>' +
+      fmtCount(r.apps) + ' applications</b>, closing <b>' + fmtCount(r.clients) +
+      (r.clients === 1 ? ' client</b>' : ' clients</b>') + ' at <b>$' + fmtMoney(S.backPrice) +
+      '</b>. That is <b>$' + fmtMoney(r.total) +
+      '/mo</b> in revenue and <b class="' + (r.net >= 0 ? 'pos' : 'neg') + '">$' + fmtSigned(r.net) +
+      ' profit</b> after ad spend.';
+  }
+
+  function fitWidth(el) {
+    el.style.width = Math.max(2.6, el.value.length * 0.8 + 1.2) + 'ch';
+  }
+
+  function parseNum(raw) {
+    var s = String(raw).replace(/[$,\s%×]/g, '');
+    var k = /k$/i.test(s);
+    if (k) s = s.replace(/k$/i, '');
+    if (s === '' || s === '-' || isNaN(Number(s))) return null;
+    return Number(s) * (k ? 1000 : 1);
+  }
+
+  function update(skipEl) {
+    var r = derived();
+    Object.keys(FIELDS).forEach(function (id) {
+      var el = $(id);
+      if (el === skipEl) return;
+      var text = FIELDS[id].fmt(r);
+      if (el.value !== text) {
+        el.value = text;
+        fitWidth(el);
+        el.classList.remove('flash');
+        void el.offsetWidth;
+        el.classList.add('flash');
+      }
+    });
+    Object.keys(STATS).forEach(function (id) {
+      var el = $(id);
+      var text = STATS[id](r);
+      if (el.textContent !== text) {
+        el.textContent = text;
+        el.classList.remove('flash');
+        void el.offsetWidth;
+        el.classList.add('flash');
+      }
+    });
+    var pays = r.feRoas >= 1;
+    $('oPays').classList.toggle('on', pays);
+    $('oPays').classList.toggle('off', !pays);
+    $('oPays').setAttribute('aria-label', pays ? 'Yes' : 'No');
+    $('oPaysLabel').classList.toggle('on', pays);
+    $('oPaysLabel').classList.toggle('off', !pays);
+    $('oPaysLabel').textContent = pays ? 'Your Ads Pay For Themselves' : 'Your Ads Are Not Covered Yet';
+    $('oClaimBox').className = 'claim ' + (pays ? 'on' : 'off');
+    $('oClaimDetail').textContent = 'The book brings back $' + fmtMoney(r.feRev) +
+      ' on $' + fmtMoney(r.adSpend) + ' of ad spend';
+    $('fFeRev').classList.toggle('pos', pays);
+    $('fFeRev').classList.toggle('neg', !pays);
+    $('fNet').classList.toggle('pos', r.net >= 0);
+    $('fNet').classList.toggle('neg', r.net < 0);
+    var perTxt = '$' + r.roas.toFixed(2) + ' back per $1 spent';
+    $('oPerDollar').className = 'node cap ' + (r.roas >= 1 ? 'pos' : 'neg');
+    $('rTotal').textContent = '$' + fmtMoney(r.total);
+    $('rAd').textContent = '\u2212 $' + fmtMoney(r.adSpend);
+    $('rProfit').textContent = '$' + fmtSigned(r.net);
+    $('rProfit').className = 'rval ' + (r.net >= 0 ? 'pos' : 'neg');
+    $('rRoas').textContent = r.roas.toFixed(1) + '\u00d7';
+    $('rPer').textContent = perTxt;
+    $('rPer').className = 'rsub ' + (r.roas >= 1 ? 'pos' : 'neg');
+    $('story').innerHTML = story(r);
+  }
+
+  Object.keys(FIELDS).forEach(function (id) {
+    var el = $(id);
+    var f = FIELDS[id];
+    el.addEventListener('input', function () {
+      fitWidth(el);
+      var v = parseNum(el.value);
+      if (v === null) return;
+      f.apply(v);
+      update(el);
+    });
+    el.addEventListener('blur', function () { update(null); });
+    el.addEventListener('keydown', function (e) { if (e.key === 'Enter') el.blur(); });
+    el.addEventListener('focus', function () { el.select(); });
+  });
+
+  $('reset').addEventListener('click', function () {
+    S = Object.assign({}, DEFAULTS);
+    update(null);
+  });
+
+  /* ---- hand-drawn wires ---- */
+  function vbrace(x, y1, y2, d) {
+    var m = (y1 + y2) / 2;
+    return 'M' + x + ',' + y1 +
+      ' Q' + (x + d) + ',' + y1 + ' ' + (x + d) + ',' + ((y1 + m) / 2) +
+      ' Q' + (x + d) + ',' + m + ' ' + (x + 2 * d) + ',' + m +
+      ' Q' + (x + d) + ',' + m + ' ' + (x + d) + ',' + ((m + y2) / 2) +
+      ' Q' + (x + d) + ',' + y2 + ' ' + x + ',' + y2;
+  }
+
+  var plain = [
+    vbrace(1072, 150, 652, 12),
+    'M1110,448 L1298,448'
+  ];
+  var arrows = [
+    'M60,262 L60,344 Q60,361 78,361 L132,361',
+    'M264,361 L284,361',
+    'M414,361 L434,361',
+    'M566,350 C616,322 648,282 682,228',
+    'M566,374 C616,420 648,480 682,528',
+  ];
+
+  var g = $('wiregroup');
+  var NS = 'http://www.w3.org/2000/svg';
+  plain.concat(arrows).forEach(function (d, i) {
+    var p = document.createElementNS(NS, 'path');
+    p.setAttribute('d', d);
+    if (i >= plain.length) p.setAttribute('marker-end', 'url(#ah)');
+    g.appendChild(p);
+  });
+
+  var BOARD_W = 1400, BOARD_H = 690, MIN_SCALE = 0.62;
+  function fitBoard() {
+    var wrap = document.querySelector('.wrap');
+    var avail = wrap.clientWidth - 32;
+    var s = Math.min(1, Math.max(MIN_SCALE, avail / BOARD_W));
+    var board = document.querySelector('.board');
+    var stage = $('stage');
+    board.style.transform = 'scale(' + s + ')';
+    stage.style.width = (BOARD_W * s) + 'px';
+    stage.style.height = (BOARD_H * s) + 'px';
+  }
+  window.addEventListener('resize', fitBoard);
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(fitBoard); }
+  fitBoard();
+
+  update(null);
+})();
+</script>
