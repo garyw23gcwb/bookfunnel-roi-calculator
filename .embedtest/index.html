@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Embed test</title>
+<style>
+  body { margin:0; font-family: system-ui, sans-serif; background:#fff; color:#111; }
+  .fakehdr { padding:20px; background:#eee; }
+  #log { padding:12px; font:14px monospace; background:#ffd; white-space:pre-wrap; }
+</style>
+</head>
+<body>
+<div class="fakehdr">Simulated HighLevel page content above</div>
+<div id="log">log: (nothing yet)</div>
+
+<div style="width:100%;max-width:1480px;margin:0 auto;">
+  <iframe
+    id="bf-roi"
+    src="https://garyw23gcwb.github.io/bookfunnel-roi-calculator/"
+    title="Book Funnel ROI Calculator"
+    scrolling="no"
+    style="width:100%;height:1100px;border:0;display:block;overflow:hidden;"
+  ></iframe>
+</div>
+<script>
+(function () {
+  var frame = document.getElementById('bf-roi');
+  var log = document.getElementById('log');
+  var lines = [];
+  function say(s) { lines.push(s); log.textContent = lines.join('\n'); }
+  say('listener attached');
+  window.addEventListener('message', function (e) {
+    say('MSG from ' + e.origin + ' :: ' + JSON.stringify(e.data));
+    if (e.origin !== 'https://garyw23gcwb.github.io') return;
+    var d = e.data;
+    if (d && d.type === 'bfroi:height' && d.height > 0) {
+      frame.style.height = d.height + 'px';
+      say('APPLIED height ' + d.height);
+    }
+  });
+  frame.addEventListener('load', function () { say('iframe load event fired'); });
+})();
+</script>
+
+<div class="fakehdr">Simulated HighLevel page content below</div>
+</body>
+</html>
