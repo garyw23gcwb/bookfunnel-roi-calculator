@@ -19,40 +19,17 @@
   }
 
   :root {
-    --paper: #f4f6f9;
-    --ink: #1a212c;
-    --red: #c4392b;
-    --panel: #ffffff;
-    --boxbg: #ffffff;
-    --hatch: rgba(26, 33, 44, 0.055);
-    --faint: #7d8899;
-    --wash: rgba(211, 245, 250, 0.85);
-    --good: #0f8a62;
-    --pen: #2899ad;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --paper: #1a212c;
-      --ink: #f4f6f9;
-      --red: #ff8a7a;
-      --panel: #202835;
-      --boxbg: #1a212c;
-      --hatch: rgba(244, 246, 249, 0.05);
-      --faint: #8d9aac;
-      --wash: rgba(40, 153, 173, 0.22);
-      --good: #55d3a0;
-      --pen: #5bc5d8;
-    }
-  }
-  :root[data-theme="light"] {
-    --paper: #f4f6f9; --ink: #1a212c; --red: #c4392b; --panel: #ffffff;
-    --boxbg: #ffffff; --hatch: rgba(26, 33, 44, 0.055); --faint: #7d8899;
-    --wash: rgba(211, 245, 250, 0.85); --good: #0f8a62; --pen: #2899ad;
-  }
-  :root[data-theme="dark"] {
-    --paper: #1a212c; --ink: #f4f6f9; --red: #ff8a7a; --panel: #202835;
-    --boxbg: #1a212c; --hatch: rgba(244, 246, 249, 0.05); --faint: #8d9aac;
-    --wash: rgba(40, 153, 173, 0.22); --good: #55d3a0; --pen: #5bc5d8;
+    color-scheme: dark;
+    --paper: #1a212c;
+    --ink: #f4f6f9;
+    --red: #ff8a7a;
+    --panel: #202835;
+    --boxbg: #1a212c;
+    --hatch: rgba(244, 246, 249, 0.05);
+    --faint: #8d9aac;
+    --wash: rgba(40, 153, 173, 0.22);
+    --good: #55d3a0;
+    --pen: #5bc5d8;
   }
 
   html { background: var(--paper); }
@@ -71,13 +48,8 @@
   .hint b { color: var(--pen); font-weight: 500; }
   .logo {
     display: block; width: 212px; height: 34px;
-    background: url(data:image/png;base64,__LOGOL_B64__) no-repeat left center / contain;
+    background: url(data:image/png;base64,__LOGOD_B64__) no-repeat left center / contain;
   }
-  @media (prefers-color-scheme: dark) {
-    .logo { background-image: url(data:image/png;base64,__LOGOD_B64__); }
-  }
-  :root[data-theme="light"] .logo { background-image: url(data:image/png;base64,__LOGOL_B64__); }
-  :root[data-theme="dark"] .logo { background-image: url(data:image/png;base64,__LOGOD_B64__); }
 
   .shell { overflow-x: auto; padding-bottom: 6px; }
   .stage { position: relative; margin: 0 auto; }
